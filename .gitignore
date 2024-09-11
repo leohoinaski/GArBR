@@ -1,7 +1,10 @@
 *.tiff
 *.tif
-
-
+*.shx
+*.dbf
+*.cpg
+*.prj
+*.shp
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

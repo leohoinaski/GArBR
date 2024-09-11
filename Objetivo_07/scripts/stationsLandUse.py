@@ -104,7 +104,8 @@ def cutMapbiomas(gdf,year):
             for ii,val in enumerate(values):
                 if val!=0:
                     gdf.loc[index,gdf.columns[gdf.columns==str(val)]] = counts[ii]
-                    
+    
+    gdf = gdf.drop(columns=['geometry'])         
     gdf.to_file(outfolder+'/stationsLandUse.shp', driver='ESRI Shapefile')
     
     return gdf
