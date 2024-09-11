@@ -5,6 +5,7 @@
 *.cpg
 *.prj
 *.shp
+Objetivo_07/outputs/mapbiomas/*.csv
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
