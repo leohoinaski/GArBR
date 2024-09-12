@@ -6,6 +6,9 @@
 *.prj
 *.shp
 Objetivo_07/outputs/mapbiomas/*.csv
+
+Objetivo_07/inputs/mapbiomasStatisticsByUF.csv
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

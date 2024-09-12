@@ -16,9 +16,7 @@ import rasterio.mask
 import numpy as np
 
 
-file = 'Monitoramento_QAr_BR_latlon_2024.csv'
-bufferSize = 5000
-year = 2022
+
 
 
 def stationBuffers(file,bufferSize): 
@@ -48,7 +46,7 @@ def stationUnionByUF(gdf):
     
     return stationInUF
 
-def cutMapbiomas(gdf,year,prefix):
+def cutMapbiomas(gdf,year,prefix,pixelSize):
     """
     Esta função é utilizada para cortar o arquivo do Mapbiomas para o domínio 
     de modelagem. Se o domínio for muito grande, ela simplesmente lê o arquivo
@@ -115,6 +113,7 @@ def cutMapbiomas(gdf,year,prefix):
 
      
             values, counts = np.unique(out_image.flatten(), return_counts=True)
+            counts = counts*pixelSize
             for ii,val in enumerate(values):
                 if val!=0:
                     gdf.loc[index,gdf.columns[gdf.columns==str(val)]] = counts[ii]
@@ -125,7 +124,7 @@ def cutMapbiomas(gdf,year,prefix):
     gdf.to_csv(outfolder+'/'+prefix+'stationsLandUseNoGeometry.csv') 
     return gdf
 
-def cutMapbiomasSimple(gdf,year):
+def cutMapbiomasSimple(gdf,year,pixelSize):
     """
     Esta função é utilizada para cortar o arquivo do Mapbiomas para o domínio 
     de modelagem. Se o domínio for muito grande, ela simplesmente lê o arquivo
@@ -186,32 +185,53 @@ def cutMapbiomasSimple(gdf,year):
                          "transform": out_transform})
 
             values, counts = np.unique(out_image.flatten(), return_counts=True)
+            counts = counts*pixelSize
             for ii,val in enumerate(values):
                 if val!=0:
                     gdf.loc[index,gdf.columns[gdf.columns==str(val)]] = counts[ii]      
     gdf.to_csv(outfolder+'/UFLandUse.csv') 
     return gdf
 
-def UFstatistics(gdfUFstations,UFshapePath):
-    ufShape = gpd.read_file(UFshapePath)
-    gdfUF=[]
+def statsByUF(gdfUFstations,year):
+    rootDir = os.path.dirname(os.getcwd())
+    inputFolder = rootDir+'/inputs'
+    outfolder = rootDir+'/outputs/mapbiomas'
+    
+    mapbioStats = pd.read_csv(inputFolder+'/mapbiomasStatisticsByUF.csv')
+    dfLegend = pd.read_csv(inputFolder+'/mapbiomasLegend.csv')
+    for dl in dfLegend['Code ID']:
+        gdfUFstations['AREAUF_'+str(dl)] = np.nan  
+    
+    gdfUFstations['AREA_TOTAL']=np.nan
+    
     for index, row in gdfUFstations.iterrows():
-        gdfUF.append(cutMapbiomasSimple(ufShape[ufShape.UF==row['ESTAÇÃO']],year))
-    gdfUF=pd.DataFrame(gdfUF)
-    gdfUF = pd.DataFrame(gdfUF,columns=["geometry"]) 
-    return gdfUF
+        gdfUFstations['AREA_TOTAL'][index] = np.sum(mapbioStats[str(year)][mapbioStats.UF==row['ESTAÇÃO']])*pixelSize
+        for dl in dfLegend['Code ID']:
+            gdfUFstations['AREAUF_'+str(dl)][index]= np.sum(
+                mapbioStats[str(year)][(mapbioStats.UF==row['ESTAÇÃO']) & 
+                                       (mapbioStats['class']==dl)])
+    #gdfUFstations = gdf.drop(columns=['geometry']) 
+    #gdfUFstations = gdf.drop(columns=['buffer']) 
+    gdfUFstations.to_csv(outfolder+'/UFstationsLandUseStats.csv')        
+    return gdfUFstations
+    
 
 
+file = 'Monitoramento_QAr_BR_latlon_2024.csv'
+bufferSize = 5000
+year = 2022
+pixelSize = 30*30
+rootDir = os.path.dirname(os.getcwd())
+inputFolder = rootDir+'/inputs'
 
-gdf = stationBuffers(file,bufferSize,)
+gdf = stationBuffers(file,bufferSize)
 
 stationInUF = stationUnionByUF(gdf)
 
-gdf = cutMapbiomas(gdf,year,'')
+gdf = cutMapbiomas(gdf,year,'',pixelSize)
 
-gdfUFstations = cutMapbiomas(stationInUF,year,'UF')
+gdfUFstations = cutMapbiomas(stationInUF,year,'UF',pixelSize)
 
-    
-UFshapePath = '/media/leohoinaski/HDD/shapefiles/Brasil.shp'
+statsByUF(gdfUFstations,year)
 
-gdfUF = UFstatistics(gdfUFstations,UFshapePath)
+
