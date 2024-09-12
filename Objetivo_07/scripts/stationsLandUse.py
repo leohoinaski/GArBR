@@ -209,7 +209,7 @@ def statsByUF(gdfUFstations,year):
         for dl in dfLegend['Code ID']:
             gdfUFstations['AREAUF_'+str(dl)][index]= np.sum(
                 mapbioStats[str(year)][(mapbioStats.UF==row['ESTAÇÃO']) & 
-                                       (mapbioStats['class']==dl)])
+                                       (mapbioStats['class']==dl)])*10000
     #gdfUFstations = gdf.drop(columns=['geometry']) 
     #gdfUFstations = gdf.drop(columns=['buffer']) 
     gdfUFstations.to_csv(outfolder+'/UFstationsLandUseStats.csv')        
