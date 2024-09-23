@@ -14,9 +14,7 @@ import geopandas as gpd
 import rasterio as rs
 import rasterio.mask
 import numpy as np
-
-
-
+import ismember
 
 
 def stationBuffers(file,bufferSize): 
@@ -117,6 +115,7 @@ def cutMapbiomas(gdf,year,prefix,pixelSize):
             for ii,val in enumerate(values):
                 if val!=0:
                     gdf.loc[index,gdf.columns[gdf.columns==str(val)]] = counts[ii]
+    gdf = majorLandUse(gdf,inputFolder)
     #gdf.to_csv(outfolder+'/stationsLandUse.csv') 
     gdf = gdf.drop(columns=['geometry'])         
     gdf.to_csv(outfolder+'/'+prefix+'stationsLandUse.csv',)
@@ -215,10 +214,20 @@ def statsByUF(gdfUFstations,year):
     gdfUFstations.to_csv(outfolder+'/UFstationsLandUseStats.csv')        
     return gdfUFstations
     
-
+def majorLandUse(gdf,inputFolder):
+    dfLegend = pd.read_csv(inputFolder+'/mapbiomasLegend.csv')
+    cols=[]
+    for dl in dfLegend['Code ID']:
+        cols.append(dl) 
+    cols = np.array(cols)
+    
+    lia,loc = ismember.ismember(gdf.columns, cols)
+    majorLU = gdf.columns[lia][np.nanargmax(np.array(gdf[gdf.columns[lia]]).transpose(),axis=0)]
+    gdf['majorLandUse'] = majorLU
+    return gdf
 
 file = 'Monitoramento_QAr_BR_latlon_2024.csv'
-bufferSize = 5000
+bufferSize = 1000
 year = 2022
 pixelSize = 30*30
 rootDir = os.path.dirname(os.getcwd())
@@ -226,9 +235,9 @@ inputFolder = rootDir+'/inputs'
 
 gdf = stationBuffers(file,bufferSize)
 
-stationInUF = stationUnionByUF(gdf)
-
 gdf = cutMapbiomas(gdf,year,'',pixelSize)
+
+stationInUF = stationUnionByUF(gdf)
 
 gdfUFstations = cutMapbiomas(stationInUF,year,'UF',pixelSize)
 
